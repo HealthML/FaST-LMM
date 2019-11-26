@@ -1,3 +1,13 @@
+NOTICE
+================
+We've moved active development for this project to a new repository at https://github.com/fastlmm/FaST-LMM/
+ 
+ 
+  
+
+
+
+
 FaST-LMM
 =================================
 
