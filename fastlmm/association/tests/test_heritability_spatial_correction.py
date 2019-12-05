@@ -9,7 +9,7 @@ import doctest
 import pandas as pd
 import fastlmm.util.util as ut
 from fastlmm.association.heritability_spatial_correction import heritability_spatial_correction
-from fastlmm.util.runner import Local, HPC, LocalMultiProc
+from pysnptools.util.mapreduce1.runner import Local, LocalMultiProc
 from pysnptools.snpreader import Dat, Bed, Pheno, SnpData
 from fastlmm.feature_selection.test import TestFeatureSelection
 
@@ -20,7 +20,7 @@ class TestHeritabilitySpatialCorrection(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        from fastlmm.util.util import create_directory_if_necessary
+        from pysnptools.util import create_directory_if_necessary
         create_directory_if_necessary(self.tempout_dir, isfile=False)
         self.pythonpath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..",".."))
         self.snpreader_whole = Bed(self.pythonpath + "/tests/datasets/synth/all",count_A1=False)
@@ -73,6 +73,24 @@ class TestHeritabilitySpatialCorrection(unittest.TestCase):
         out,msg=ut.compare_files(tmpOutfile, referenceOutfile, tolerance)                
         self.assertTrue(out, "msg='{0}', ref='{1}', tmp='{2}'".format(msg, referenceOutfile, tmpOutfile))
 
+    def test_three(self):
+        '''
+        Lock in results on arbitrary data -- because meaningful runs take too long to run.
+        '''
+        fn = "three.txt"
+        logging.info(fn)
+        tmpOutfile = self.file_name(fn)
+
+        snpreader = self.snpreader_whole[:10,:]
+
+        spatial_coor = [[i,-i] for i in xrange(snpreader.iid_count)]
+        alpha_list = alpha_list_big=[int(v) for v in np.logspace(2,np.log10(4000), 2)]
+        dataframe = heritability_spatial_correction(snpreader,spatial_coor,snpreader.iid,alpha_list,2,self.pheno_whole,jackknife_count=0,permute_plus_count=0,permute_times_count=0,just_testing=False)
+
+        dataframe.to_csv(tmpOutfile,sep="\t",index=False)
+        referenceOutfile = TestFeatureSelection.reference_file("heritability_spatial_correction/"+fn)
+        out,msg=ut.compare_files(tmpOutfile, referenceOutfile, tolerance)                
+        self.assertTrue(out, "msg='{0}', ref='{1}', tmp='{2}'".format(msg, referenceOutfile, tmpOutfile))
 
     def test_doctest(self):
         old_dir = os.getcwd()

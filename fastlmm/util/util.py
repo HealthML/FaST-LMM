@@ -3,6 +3,7 @@ import warnings
 import logging
 import sys
 import time
+import pysnptools.util as pstutil
 
 def thin_results_file(myfile,dup_postfix="v2"):
     '''
@@ -282,13 +283,7 @@ def appendtofilename(filename,midfix,sep="."):
         return infofilename
 
 def datestamp(appendrandom=False):
-    import datetime
-    now = datetime.datetime.now()
-    s = str(now)[:19].replace(" ","_").replace(":","_")
-    if appendrandom:
-        import random
-        s += "_" + str(random.random())[2:]
-    return s
+    return pstutil._datestamp(appendrandom=appendrandom)
            
 
 
@@ -304,38 +299,6 @@ def datestamp(appendrandom=False):
 #        index += 1
 #        yield item, index
 
-def create_directory_if_necessary(name, isfile=True, robust=False):
-    import os
-    if isfile:
-        directory_name = os.path.dirname(name)
-    else:
-        directory_name = name
-
-    if directory_name != "":
-        if not robust:
-            try:
-                os.makedirs(directory_name)
-            except OSError, e:
-                if not os.path.isdir(directory_name):
-                    raise Exception("not valid path: '{0}'. (Working directory is '{1}'".format(directory_name,os.getcwd()))
-        else:
-            is_ok = False
-            time_to_sleep = 10.0
-            for i in xrange(25):
-                try:
-                    os.makedirs(directory_name)
-                    is_ok = True
-                    break
-                except OSError, e:
-                    if not os.path.isdir(directory_name):
-                        time_to_sleep *= 1.1
-                        warnings.warn("creating directory robust=True, try#{0},time={3} error: not valid path: '{1}'. (Working directory is '{2}'".format(i, directory_name,os.getcwd(),int(time_to_sleep)))
-                        time.sleep(int(time_to_sleep)) ; #make random?
-                    else:
-                        is_ok = True
-                        break
-            if not is_ok:
-                raise Exception("not valid path: '{0}'. (Working directory is '{1}'".format(directory_name,os.getcwd()))
 
 
 def which(vec):
@@ -371,8 +334,7 @@ def which_opposite(vec):
             return(i)
     return(-1)
 
-
-def generatePermutation(numbersamples,randomSeedOrState):
+def generate_permutation(numbersamples,randomSeedOrState):
     from numpy.random import RandomState
 
     if isinstance(randomSeedOrState,RandomState):
@@ -471,42 +433,46 @@ def manhattan_plot(chr_pos_pvalue_array,pvalue_line=None,plot_threshold=1.0,vlin
     """
     Function to create a Manhattan plot.  See http://en.wikipedia.org/wiki/Manhattan_plot.
 
-    Args:
-        chr_pos_pvalue_array:   an n x 3 numpy array. The three columns are the chrom number 
+    :param chr_pos_pvalue_array: an n x 3 numpy array. The three columns are the chrom number 
                                 (as a number), the position, and pvalue.
-                                :type chr_pos_pvalue_array: numpy array
-        pvalue_line:            (Default: None). If given, draws a line at that PValue.
-                                :type pvalue_line: a 'pheno dictionary' or a string
-        plot_threshold:         plot only SNPs that achieve a P-value smaller than pvalue_threshold
+    :type chr_pos_pvalue_array: numpy array
+    :param pvalue_line:         (Default: None). If given, draws a line at that PValue.
+    :type pvalue_line:          number
+    :param plot_threshold:      (Default: 1) Plot only SNPs that achieve a P-value smaller than pvalue_threshold
                                 to speed up plotting
-        vline_significant:      boolean. Draw a vertical line at each significant Pvalue?
-                                :rtype: none, but changes the global current figure.
-        marker:                 marker for the scatter plot. default: "o"
-        chromosome_starts:      [Nchrom x 3] ndarray: chromosome, cumulative start position, cumulative stop position
+    :type plot_threshold:       number
+    :param vline_significant:   If true, draw a vertical line at each significant Pvalue (Default: False)
+    :type vline_significant:    Boolean
+    :param marker:              marker for the scatter plot. default: "o"
+    :type marker:               string
+    :param chromosome_starts:   chromosome, cumulative start position, cumulative stop position
                                 cumulative chromosome starts, for plotting. If None (default), this is estimated from data
-        xaxis_unit_bp:          plot cumulative position in basepair units on x axis? If False, only 
+    :type chromosome_starts:    [Nchrom x 3] ndarray
+    :param xaxis_unit_bp:       If true, plot cumulative position in basepair units on x axis. If False, only 
                                 use rank of SNP positions. (default: True)
-        alpha:                  alpha (opaquness) for P-value markers in scatterplot (default 0.5)
+    :type xaxis_unit_bp:        Boolean
+    :param alpha:               alpha (opaqueness) for P-value markers in scatterplot (default 0.5)
+    :type alpha:                number
 
-    Returns:
-        chromosome_starts       [Nchrom x 3] ndarray: chromosome, cumulative start position, cumulative stop position
+    :rtype:                     chromosome_starts       [Nchrom x 3] ndarray: chromosome, cumulative start position, cumulative stop position
                                 cumulative chromosome starts used in plotting.
 
     :Example:
 
-    >>> from fastlmm.association import single_snp
-    >>> from pysnptools.snpreader import Bed
-    >>> import matplotlib.pyplot as plt
-    >>> import fastlmm.util.util as flutil
-    >>> pheno_fn = "../feature_selection/examples/toydata.phe"
-    >>> results_dataframe = single_snp(test_snps="../feature_selection/examples/toydata.5chrom", pheno=pheno_fn, h2=.2, count_A1=False)
-    >>> #chromosome_starts = flutil.manhattan_plot(results_dataframe[["Chr", "ChrPos", "PValue"]],pvalue_line=1e-7)
-    >>> #plt.show()
+        >>> from fastlmm.association import single_snp
+        >>> from pysnptools.snpreader import Bed
+        >>> import matplotlib.pyplot as plt
+        >>> import fastlmm.util.util as flutil
+        >>> pheno_fn = "../feature_selection/examples/toydata.phe"
+        >>> results_dataframe = single_snp(test_snps="../feature_selection/examples/toydata.5chrom", pheno=pheno_fn, h2=.2, count_A1=False)
+        >>> chromosome_starts = flutil.manhattan_plot(results_dataframe[["Chr", "ChrPos", "PValue"]],pvalue_line=1e-7)
+        >>> #plt.show()
 
     """
     import matplotlib
-    matplotlib.use('Agg',warn=False) #This lets it work even on machines without graphics displays
+    matplotlib.use('agg',warn=False) #This lets it work even on machines without graphics displays
     import matplotlib.pyplot as plt
+    #plt.switch_backend('agg')
 
     # create a copy of the data and sort it by chrom and then position
     array = np.array(chr_pos_pvalue_array)
@@ -570,8 +536,10 @@ def _compute_x_positions_snps(positions, chromosome_starts):
     return cumulative_pos
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    plt.switch_backend('agg') #Needed so can test manhanttan_plot on machine with no DISPLAY
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
 
     import doctest
     doctest.testmod()

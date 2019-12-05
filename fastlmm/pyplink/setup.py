@@ -26,7 +26,7 @@ except Exception:
 
 
 def readme():
-    with open('README.txt') as f:
+    with open('README.md') as f:
        return f.read()
 
 
@@ -60,9 +60,8 @@ setup(
     long_description=readme(),
     keywords='gwas bioinformatics LMMs MLMs',
     url='',
-    author='MSR',
+    author='FaST-LMM Team',
     author_email='...',
-    license='non-commercial (MSR-LA)',
     packages=[
         "fastlmm/association/tests",
         "fastlmm/association",
@@ -78,7 +77,6 @@ setup(
         "fastlmm/pyplink/snpreader",
         "fastlmm/pyplink/snpset",
         "fastlmm/pyplink",
-        "fastlmm/util/runner",
         "fastlmm/util/stats/quadform",
         "fastlmm/util/stats",
         "fastlmm/util",

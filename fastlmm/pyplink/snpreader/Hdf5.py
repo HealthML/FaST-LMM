@@ -5,7 +5,6 @@ except:
 
 import logging
 import scipy as sp
-import fastlmm.util.preprocess as util
 from fastlmm.pyplink.snpset import *
 from fastlmm.pyplink.altset_list import *
 
@@ -91,7 +90,7 @@ class Hdf5(object):
     
 
     def __del__(self):
-        if self.h5 != None:  # we need to test this because Python doesn't guarentee that __init__ was fully run
+        if self.h5 != None:  # we need to test this because Python doesn't guarantee that __init__ was fully run
             self.h5.close()
 
     def read_direct(self, snps, selection=sp.s_[:,:]):

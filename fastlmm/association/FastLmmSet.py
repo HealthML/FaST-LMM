@@ -7,9 +7,10 @@ from pysnptools.util.pheno import *
 from fastlmm.pyplink.altset_list import *
 import subprocess, sys, os.path
 import fastlmm.util.stats.chi2mixture as c2
-from fastlmm.util.distributable import *
-from fastlmm.util.runner import *
+from pysnptools.util.mapreduce1.distributable import *
+from pysnptools.util.mapreduce1.runner import *
 import pdb
+import pysnptools.util as pstutil
 import fastlmm.util.util as utilx
 import fastlmm.util.stats as ss
 import time
@@ -24,6 +25,7 @@ import logging
 import warnings
 from tempfile import TemporaryFile
 import fastlmm.util.preprocess as util
+import os
 
 class FastLmmSet: # implements IDistributable
     '''
@@ -34,7 +36,7 @@ class FastLmmSet: # implements IDistributable
     def addpostifx_to_outfile(self):
         if self.datestamp is not None:
             if self.datestamp=="auto":
-                self.datestamp=utilx.datestamp()
+                self.datestamp=pstutil._datestamp()
             self.outfile=utilx.appendtofilename(self.outfile,self.datestamp,"_")
 
     def __init__(self, **entries):
@@ -152,7 +154,7 @@ class FastLmmSet: # implements IDistributable
         #if self.test not in allowed_tests: raise Exception("test must be one of " + str(allowed_tests) +", but found " + self.test)
 
     # =================================================================
-    # BEGIN Implementation of the IDistributable interface described in fastlmm.util.distributable
+    # BEGIN Implementation of the IDistributable interface described in pysnptools.util.mapreduce1.distributable
     # =================================================================
 
     def hasNonNoneAttr(self, attr):
@@ -294,7 +296,7 @@ class FastLmmSet: # implements IDistributable
         if self.datestamp=="auto": self.outfile=utilx.appendtofilename(self.outfile,"tab")
 
         try:
-            utilx.create_directory_if_necessary(infofile)
+            pstutil.create_directory_if_necessary(infofile)
         except:
             logging.warn("Exception while creating directory for '{0}'. Assuming that other cluster task is creating it.".format(infofile))
 
@@ -373,17 +375,17 @@ class FastLmmSet: # implements IDistributable
         logging_handler.close()
         return self.outfile
         
-    def getRandSnpSignal(self, nSnp, nInd,genphen,newseed):
-        from numpy.random import RandomState
-        import fastlmm.util.gensnp as gp
-        randomstate = RandomState(newseed) 
-        nSnp=genphen["numBackSnps"]
-        #randsnps=self.alt_snpreader.read(RandomSnpSet(nSnp,newseed))     #this appears to be VERY slow
-        #snps=randsnps['snps']         
-        snps=gp.gensnps(nInd,nSnp)                        
-        randG = snps/sp.sqrt(nSnp) #pre-process for kernel
-        y_randG=sp.sqrt(genphen["varBack"])*randG.dot(randomstate.rand(nSnp,1))            
-        return y_randG
+    #def getRandSnpSignal(self, nSnp, nInd,genphen,newseed):
+    #    from numpy.random import RandomState
+    #    import pysnptools.util.gensnp as gp #!!! does this work?
+    #    randomstate = RandomState(newseed) 
+    #    nSnp=genphen["numBackSnps"]
+    #    #randsnps=self.alt_snpreader.read(RandomSnpSet(nSnp,newseed))     #this appears to be VERY slow
+    #    #snps=randsnps['snps']         
+    #    snps=gp.gensnps(nInd,nSnp)                        
+    #    randG = snps/sp.sqrt(nSnp) #pre-process for kernel
+    #    y_randG=sp.sqrt(genphen["varBack"])*randG.dot(randomstate.rand(nSnp,1))            
+    #    return y_randG
 
     def TESTBEFOREUSINGKfromAltSnps(self, N, SNPsalt=None):        
        
@@ -425,7 +427,7 @@ class FastLmmSet: # implements IDistributable
     def _saveArray(self, appendNameFile, header, values):
         outfile = utilx.appendtofilename(self.outfile, appendNameFile)
         try:
-            utilx.create_directory_if_necessary(outfile)
+            pstutil.create_directory_if_necessary(outfile)
         except:
             logging.warn("Exception while creating directory for '{0}'. Assuming that other cluster task is creating it.".format(outfile))
 
@@ -494,7 +496,7 @@ class FastLmmSet: # implements IDistributable
             copier.output(self._synthphenfile)
 
     # =================================================================
-    # END Implementation the IDistributable interface described in fastlmm.util.distributable
+    # END Implementation the IDistributable interface described in pysnptools.util.mapreduce1.distributable
     # =================================================================
 
     def _check_entries(self, entries):
@@ -567,7 +569,7 @@ class FastLmmSet: # implements IDistributable
                     break;
                 checkpoint=checkpoint*2
             
-            permutationIndex = utilx.generatePermutation(y.shape[0],randomstate)
+            permutationIndex = utilx.generate_permutation(y.shape[0],randomstate)
             yperm=y[permutationIndex]           
             Xperm=self.__X[permutationIndex]                
                                                                    
@@ -655,7 +657,7 @@ class FastLmmSet: # implements IDistributable
 
 
         if self.permute is not None: #permute the data to test for type I error
-                permutationIndex = utilx.generatePermutation(SNPs1['snps'].shape[0],self.mainseed ^ self.permute)      
+                permutationIndex = utilx.generate_permutation(SNPs1['snps'].shape[0],self.mainseed ^ self.permute)      
         if iperm >= 0 :  #permute the data to create Null-only P-values for lrt null fitting
             eachseed=utilx.combineseeds(self.calseed,iperm)            
             newseed = self.mainseed ^ eachseed  
@@ -664,7 +666,7 @@ class FastLmmSet: # implements IDistributable
                 #Add a left shift so that iperm=1 and self.permute=2 gives a different newseed than 
                 #iperm=2 and self.permute=1
                 newseed = (newseed << 1) ^ self.permute
-            permutationIndex = utilx.generatePermutation(SNPs1['snps'].shape[0], newseed)
+            permutationIndex = utilx.generate_permutation(SNPs1['snps'].shape[0], newseed)
         if varcomp_test is None or not self.cache_from_perm:
             #need to make this caching smarter for when background kernel changes in every test (e.g. interactions)
             if (self.permute is not None) or (iperm >=0):
@@ -758,7 +760,7 @@ class FastLmmSet: # implements IDistributable
         logging.info(" (" + str(result.setsize) + " SNPs)")
 
         if self.permute >= 0 :
-            permutationIndex = utilx.generatePermutation(SNPs1['snps'].shape[0],self.rseed ^ self.permute)
+            permutationIndex = utilx.generate_permutation(SNPs1['snps'].shape[0],self.rseed ^ self.permute)
             G1=G1[permutationIndex]
 
         if iperm >= 0 :
@@ -766,7 +768,7 @@ class FastLmmSet: # implements IDistributable
             if self.permute >= 0 :
                 #Add a left shift so that iperm=1 and self.permute=2 gives a different newseed than iperm=2 and self.permute=1
                 newseed = (newseed << 1) ^ self.permute
-            permutationIndex = utilx.generatePermutation(SNPs1['snps'].shape[0], newseed)
+            permutationIndex = utilx.generate_permutation(SNPs1['snps'].shape[0], newseed)
             #permute the data to create Null-only P-values
             G1=G1[permutationIndex]
 
@@ -809,6 +811,7 @@ class FastLmmSet: # implements IDistributable
             #call C++ version of FaST-LMM select to determine background Covariance matrix of the LMM
             osname = sys.platform
             dir = os.path.split(__file__)[0] #__file__ is the pathname of the file from which the module
+            os.environ["FastLmmUseAnyMklLib"] = "1"
             if (osname.find("win") >= 0):    #         was loaded, if it was loaded from a file
                 fastlmmpath = os.path.join(dir,"Fastlmm_autoselect", "fastlmmc.exe")
             elif (osname.find("linux") >= 0):

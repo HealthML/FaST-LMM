@@ -1,9 +1,8 @@
-from fastlmm.util.runner import *
+from pysnptools.util.mapreduce1.runner import *
 import logging
 import fastlmm.pyplink.plink as plink
 import pysnptools.util as pstutil
 import pysnptools.util.pheno as pstpheno
-import fastlmm.util.util as flutil
 import numpy as np
 from fastlmm.inference import LMM
 import scipy.stats as stats
@@ -20,7 +19,7 @@ def epistasis(test_snps,pheno,G0, G1=None, mixing=0.0, covar=None,output_file_na
     Function performing epistasis GWAS with ML (never REML).  See http://www.nature.com/srep/2013/130122/srep01099/full/srep01099.html.
 
     :param test_snps: SNPs from which to test pairs. If you give a string, it should be the base name of a set of PLINK Bed-formatted files.
-    :type test_snps: a :class:`.SnpReader` or a string
+    :type test_snps: a `SnpReader <http://fastlmm.github.io/PySnpTools/#snpreader-snpreader>`__ or a string
 
     :param pheno: A single phenotype: A 'pheno dictionary' contains an ndarray on the 'vals' key and a iid list on the 'iid' key.
       If you give a string, it should be the file name of a PLINK phenotype-formatted file.
@@ -28,11 +27,11 @@ def epistasis(test_snps,pheno,G0, G1=None, mixing=0.0, covar=None,output_file_na
 
     :param G0: SNPs from which to construct a similarity matrix.
           If you give a string, it should be the base name of a set of PLINK Bed-formatted files.
-    :type G0: a :class:`.SnpReader` or a string
+    :type G0: a `SnpReader <http://fastlmm.github.io/PySnpTools/#snpreader-snpreader>`__ or a string
 
     :param G1: SNPs from which to construct a second similarity kernel, optional. Also, see 'mixing').
           If you give a string, it should be the base name of a set of PLINK Bed-formatted files.
-    :type G1: a :class:`.SnpReader` or a string
+    :type G1: a `SnpReader <http://fastlmm.github.io/PySnpTools/#snpreader-snpreader>`__ or a string
 
     :param mixing: Weight between 0.0 (inclusive, default) and 1.1 (inclusive) given to G1 relative to G0.
             If you give no mixing number, G0 will get all the weight and G1 will be ignored.
@@ -52,7 +51,7 @@ def epistasis(test_snps,pheno,G0, G1=None, mixing=0.0, covar=None,output_file_na
             If you give no sid_list_1, all sids in test_snps will be used.
     :type sid_list_1: list of strings
 
-    :param output_file_name: Name of file to write results to, optional. If not given, no output file will be created. The output format is tab-deleted text.
+    :param output_file_name: Name of file to write results to, optional. If not given, no output file will be created. The output format is tab-delimited text.
     :type output_file_name: file name
 
     :param log_delta: A parameter to LMM learning, optional
@@ -75,9 +74,9 @@ def epistasis(test_snps,pheno,G0, G1=None, mixing=0.0, covar=None,output_file_na
                 Calls using the same cache file should have the same 'G0' and 'G1'
     :type cache_file: file name
 
-    :param runner: a runner, optional: Tells how to run locally, multi-processor, or on a cluster.
+    :param runner: a `Runner <http://fastlmm.github.io/PySnpTools/#util-mapreduce1-runner-runner>`__, optional: Tells how to run locally, multi-processor, or on a cluster.
         If not given, the function is run locally.
-    :type runner: a runner.
+    :type runner: `Runner <http://fastlmm.github.io/PySnpTools/#util-mapreduce1-runner-runner>`__
 
     :param count_A1: If it needs to read SNP data from a BED-formatted file, tells if it should count the number of A1
          alleles (the PLINK standard) or the number of A2 alleles. False is the current default, but in the future the default will change to True.
@@ -433,7 +432,7 @@ class _Epistasis(object) : #implements IDistributable
             G0_standardized = self.G0.read().standardize()
             lmm.setG(G0_standardized.val, self.G1val_or_none, a2=self.mixing)
             logging.info("Saving precomputation to {0}".format(self.cache_file))
-            util.create_directory_if_necessary(self.cache_file)
+            pstutil.create_directory_if_necessary(self.cache_file)
             np.savez(self.cache_file, lmm.U,lmm.S) #using np.savez instead of pickle because it seems to be faster to read and write
 
         if self.external_log_delta is None:

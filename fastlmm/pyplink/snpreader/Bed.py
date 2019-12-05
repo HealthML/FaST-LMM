@@ -4,7 +4,6 @@ from itertools import *
 from fastlmm.pyplink.snpset import *
 from fastlmm.pyplink.altset_list import *
 import pandas as pd
-import fastlmm.util.preprocess as util
 import logging
 
 WRAPPED_PLINK_PARSER_PRESENT = None
@@ -78,7 +77,7 @@ class Bed(object):
         return self
 
     def __del__(self):
-        if self._filepointer != None:  # we need to test this because Python doesn't guarentee that __init__ was fully run
+        if self._filepointer != None:  # we need to test this because Python doesn't guarantee that __init__ was fully run
             self._filepointer.close()
 
     def copyinputs(self, copier):

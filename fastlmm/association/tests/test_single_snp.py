@@ -9,7 +9,7 @@ from fastlmm.association import single_snp
 from fastlmm.association import single_snp_linreg
 import pysnptools.util.pheno as pstpheno
 from fastlmm.feature_selection.test import TestFeatureSelection
-from fastlmm.util.runner import Local, HPC, LocalMultiProc
+from pysnptools.util.mapreduce1.runner import Local, LocalMultiProc
 from pysnptools.kernelreader import  Identity as KernelIdentity
 from pysnptools.standardizer import Unit
 from pysnptools.snpreader import Bed, Pheno, SnpData
@@ -22,7 +22,7 @@ class TestSingleSnp(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        from fastlmm.util.util import create_directory_if_necessary
+        from pysnptools.util import create_directory_if_necessary
         create_directory_if_necessary(self.tempout_dir, isfile=False)
         self.pythonpath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..",".."))
         self.bedbase = os.path.join(self.pythonpath, 'tests/datasets/all_chr.maf0.001.N300')
@@ -51,7 +51,7 @@ class TestSingleSnp(unittest.TestCase):
             frame_log_delta = single_snp(test_snps=snps[:,test_idx], pheno=pheno, G0=G0,G1=G1, covar=covar,log_delta=0,leave_out_one_chrom=False,count_A1=False)
             for frame in [frame_h2, frame_log_delta]:
                 referenceOutfile = TestFeatureSelection.reference_file("single_snp/topsnps.single.txt")
-                reference = pd.read_table(referenceOutfile,sep="\t") # We've manually remove all comments and blank lines from this file
+                reference = pd.read_csv(referenceOutfile,sep="\t") # We've manually remove all comments and blank lines from this file
                 assert len(frame) == len(reference)
                 for _, row in reference.iterrows():
                     sid = row.SNP
@@ -420,7 +420,7 @@ class TestSingleSnpLeaveOutOneChrom(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        from fastlmm.util.util import create_directory_if_necessary
+        from pysnptools.util import create_directory_if_necessary
         create_directory_if_necessary(self.tempout_dir, isfile=False)
         self.pythonpath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","..",".."))
         self.bedbase = os.path.join(self.pythonpath, 'fastlmm/feature_selection/examples/toydata.5chrom')
@@ -541,7 +541,7 @@ def getTestSuite():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    from fastlmm.util.runner import Local, HPC, LocalMultiProc, LocalInParts
+    from pysnptools.util.mapreduce1.runner import Local, LocalMultiProc, LocalInParts
 
 
     # this import is needed for the runner
@@ -554,7 +554,7 @@ if __name__ == '__main__':
     else: #Cluster test run
         logging.basicConfig(level=logging.INFO)
 
-        from fastlmm.util.distributabletest import DistributableTest
+        from pysnptools.util.mapreduce1.distributabletest import DistributableTest
 
         remote_python_parent=r"\\GCR\Scratch\RR1\escience\carlk\data\carlk\pythonpath06292016"
         runner = HPC(2, 'GCR',r"\\GCR\Scratch\RR1\escience",
